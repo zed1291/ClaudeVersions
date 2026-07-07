@@ -85,11 +85,6 @@ fi
 
 cd "$REPO_DIR" || exit 1
 
-if [ ! -f ".git/config" ]; then
-    git config user.email "zed1291@users.noreply.github.com"
-    git config user.name "zed1291"
-fi
-
 # Pull latest changes
 if ! git pull origin main; then
     log_message "WARNING: Git pull failed"
