@@ -11,6 +11,9 @@ LOG_FILE="$(dirname "$0")/claude_update.log"
 # Use SSH key from local directory
 export GIT_SSH_COMMAND="ssh -i ${SSH_KEY} -F /dev/null -o StrictHostKeyChecking=no"
 
+# Calculate script directory
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
 # --- Logging ---
 log_message() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
@@ -29,7 +32,7 @@ latest_version=$(echo "$releases_data" | grep -o '"url":"[^"]*"' | cut -d'"' -f4
 current_date=$(date +'%Y-%m-%d')
 
 # --- Local JSON (Source of Truth) ---
-LOCAL_JSON="$(cd "$(dirname "$0")" && pwd)/claude_versions.json"
+LOCAL_JSON="$SCRIPT_DIR/claude_versions.json"
 
 # Initialize local JSON if it does not exist
 if [ ! -f "$LOCAL_JSON" ]; then
@@ -44,26 +47,38 @@ update_json() {
     local url=$3
     local date=$4
 
-    # Use python3 for reliable JSON manipulation
-    python3 -c "
+    export UPDATE_JSON_FILE="$file"
+    export UPDATE_JSON_VERSION="$version"
+    export UPDATE_JSON_URL="$url"
+    export UPDATE_JSON_DATE="$date"
+
+    python3 << 'PYEOF'
 import json
-with open('$file', 'r') as f:
+import os
+
+with open(os.environ['UPDATE_JSON_FILE'], 'r') as f:
     data = json.load(f)
 
-# Update latest
-data['latest'] = {'version': '$version', 'url': '$url', 'date': '$date'}
+data['latest'] = {
+    'version': os.environ['UPDATE_JSON_VERSION'],
+    'url': os.environ['UPDATE_JSON_URL'],
+    'date': os.environ['UPDATE_JSON_DATE']
+}
 
-# Add/update version entry directly at root level
-data['$version'] = {'url': '$url', 'date': '$date'}
+data[os.environ['UPDATE_JSON_VERSION']] = {
+    'url': os.environ['UPDATE_JSON_URL'],
+    'date': os.environ['UPDATE_JSON_DATE']
+}
 
-# Remove 'versions' key if it exists
 if 'versions' in data:
     del data['versions']
 
-with open('$file', 'w') as f:
+with open(os.environ['UPDATE_JSON_FILE'], 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
-"
+PYEOF
+
+    unset UPDATE_JSON_FILE UPDATE_JSON_VERSION UPDATE_JSON_URL UPDATE_JSON_DATE
 }
 
 update_json "$LOCAL_JSON" "$latest_version" "$download_url" "$current_date"
@@ -71,9 +86,6 @@ log_message "Updated local JSON with version $latest_version"
 
 # --- GitHub Sync ---
 log_message "Starting GitHub sync"
-
-# Save script directory before changing
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Set up the repo directory
 if [ ! -d "$REPO_DIR/.git" ]; then
@@ -90,19 +102,11 @@ cd "$REPO_DIR" || exit 1
 
 # Pull latest changes
 if ! git pull origin main; then
-    log_message "WARNING: Git pull failed"
-fi
-
-# Check if source files exist
-if [ ! -f "$LOCAL_JSON" ]; then
-    log_message "ERROR: Local JSON file not found: $LOCAL_JSON"
+    log_message "ERROR: Git pull failed"
     exit 1
 fi
 
-if [ ! -f "$SCRIPT_DIR/getClaudeVersion.sh" ]; then
-    log_message "ERROR: Local script file not found"
-    exit 1
-fi
+
 
 # Copy files to repo
 cp "$LOCAL_JSON" ./claude_versions.json
@@ -118,7 +122,10 @@ log_message "Changes detected. Committing to GitHub..."
 
 # Commit and push
 git add claude_versions.json getClaudeVersion.sh
-git commit -m "Automated: Update Claude versions and script ($current_date)"
+if ! git commit -m "Automated: Update Claude versions and script ($current_date)"; then
+    log_message "ERROR: Git commit failed"
+    exit 1
+fi
 git push origin main
 
 log_message "SUCCESS: Pushed to GitHub"
