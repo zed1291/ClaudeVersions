@@ -1,6 +1,6 @@
 # Claude Versions
 
-This repository contains information about Claude Desktop for Mac version history and and download URL history, automatically updated daily.
+This repository contains information about Claude Desktop for Mac version history and and download URL history, automatically updated daily. The initial commit and uodates (as of 8 july 2026) are running on my personal computer. In the near future I will have a Synology NAS running this script for more consistent daily checks.
 
 ---
 
@@ -18,6 +18,6 @@ This service is scheduled to update daily, but may cease to work at any time wit
 
 This script and repository are written by an "AI" large language model.
 
-The script is written almost entirely by Mistral AI's `mistral-medium-3.5` model, running on Mistral's servers located in France.
+The script is written almost entirely by Mistral AI's `mistral-medium-3.5` model, created using Mistral's model run via their servers not locally on-device. Mistral's servers are located in France.
 
 ---
