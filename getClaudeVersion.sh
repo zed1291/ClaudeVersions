@@ -40,6 +40,19 @@ if [ ! -f "$LOCAL_JSON" ]; then
     log_message "Initialized local JSON: $LOCAL_JSON"
 fi
 
+# --- Check if version has changed ---
+current_latest_version=$(python3 -c "import json; print(json.load(open('$LOCAL_JSON'))['latest']['version'])" 2>/dev/null)
+
+# Only update if version is different or JSON doesn't exist
+if [ "$current_latest_version" != "$latest_version" ]; then
+    log_message "New version detected: $latest_version (was: $current_latest_version)"
+    use_date="$current_date"
+else
+    # Keep existing date - version hasn't changed
+    use_date=$(python3 -c "import json; print(json.load(open('$LOCAL_JSON'))['latest']['date'])" 2>/dev/null)
+    log_message "Version unchanged: $latest_version, preserving date: $use_date"
+fi
+
 # --- Function to update JSON ---
 update_json() {
     local file=$1
@@ -81,7 +94,7 @@ PYEOF
     unset UPDATE_JSON_FILE UPDATE_JSON_VERSION UPDATE_JSON_URL UPDATE_JSON_DATE
 }
 
-update_json "$LOCAL_JSON" "$latest_version" "$download_url" "$current_date"
+update_json "$LOCAL_JSON" "$latest_version" "$download_url" "$use_date"
 log_message "Updated local JSON with version $latest_version"
 
 # --- GitHub Sync ---
