@@ -31,6 +31,59 @@ download_url=$(echo "$releases_data" | grep -o '"url":"[^"]*"' | cut -d'"' -f4 |
 latest_version=$(echo "$releases_data" | grep -o '"url":"[^"]*"' | cut -d'"' -f4 | grep -oE '/[0-9]+\.[0-9]+\.[0-9]+/' | head -n1 | tr -d '/')
 current_date=$(date +'%Y-%m-%d')
 
+# --- Validate system date ---
+# Check if today's date is older than any existing date in the JSON
+validate_date() {
+    local today="$1"
+    local json_file="$2"
+    
+    # If JSON doesn't exist yet, skip validation
+    if [ ! -f "$json_file" ]; then
+        return 0
+    fi
+    
+    # Get all dates from the JSON file
+    local existing_dates
+    existing_dates=$(python3 -c "
+import json, sys
+try:
+    data = json.load(open('$json_file'))
+    dates = []
+    for key, value in data.items():
+        if isinstance(value, dict) and 'date' in value:
+            dates.append(value['date'])
+    print('\n'.join(dates))
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null)
+    
+    if [ -z "$existing_dates" ]; then
+        return 0
+    fi
+    
+    # Compare today with each existing date
+    # Convert dates to comparable integers (YYYYMMDD format)
+    today_int=$(echo "$today" | tr -d '-')
+    
+    while IFS= read -r existing_date; do
+        if [ -n "$existing_date" ]; then
+            existing_int=$(echo "$existing_date" | tr -d '-')
+            if [ "$today_int" -lt "$existing_int" ]; then
+                log_message "ERROR: System date ($today) is older than existing date ($existing_date) in JSON. Check system clock!"
+                return 1
+            fi
+        fi
+    done <<< "$existing_dates"
+    
+    return 0
+}
+
+validate_date "$current_date" "$LOCAL_JSON"
+if [ $? -ne 0 ]; then
+    log_message "ERROR: Invalid system date detected. Aborting update."
+    exit 1
+fi
+
 # --- Local JSON (Source of Truth) ---
 LOCAL_JSON="$SCRIPT_DIR/claude_versions.json"
 
