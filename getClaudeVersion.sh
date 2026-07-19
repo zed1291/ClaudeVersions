@@ -6,13 +6,13 @@ GITHUB_URL="https://github.com/zed1291/ClaudeVersions.git"
 GITHUB_USER="zed1291"
 GITHUB_REPO="ClaudeVersions"
 SSH_KEY="/home/zed/.claude/github_claude_ed25519"
-LOG_FILE="$(dirname "$0")/claude_update.log"
 
 # Use SSH key from local directory
 export GIT_SSH_COMMAND="ssh -i ${SSH_KEY} -F /dev/null -o StrictHostKeyChecking=no"
 
-# Calculate script directory
+# Calculate script directory and absolute log path
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+LOG_FILE="$SCRIPT_DIR/claude_update.log"
 
 # --- Logging ---
 log_message() {
