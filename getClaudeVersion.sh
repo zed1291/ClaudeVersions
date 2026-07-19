@@ -78,12 +78,6 @@ except Exception as e:
     return 0
 }
 
-validate_date "$current_date" "$LOCAL_JSON"
-if [ $? -ne 0 ]; then
-    log_message "ERROR: Invalid system date detected. Aborting update."
-    exit 1
-fi
-
 # --- Local JSON (Source of Truth) ---
 LOCAL_JSON="$SCRIPT_DIR/claude_versions.json"
 
@@ -91,6 +85,12 @@ LOCAL_JSON="$SCRIPT_DIR/claude_versions.json"
 if [ ! -f "$LOCAL_JSON" ]; then
     echo '{"latest": {"version": "", "url": "", "date": ""}}' > "$LOCAL_JSON"
     log_message "Initialized local JSON: $LOCAL_JSON"
+fi
+
+validate_date "$current_date" "$LOCAL_JSON"
+if [ $? -ne 0 ]; then
+    log_message "ERROR: Invalid system date detected. Aborting update."
+    exit 1
 fi
 
 # --- Check if version has changed ---
@@ -153,12 +153,17 @@ log_message "Updated local JSON with version $latest_version"
 # --- GitHub Sync ---
 log_message "Starting GitHub sync"
 
+# Work around Git safe.directory when running under cron
+if ! git config --global --get-all safe.directory 2>/dev/null | grep -qxF "$REPO_DIR"; then
+    git config --global --add safe.directory "$REPO_DIR" 2>/dev/null
+fi
+
 # Set up the repo directory
 if [ ! -d "$REPO_DIR/.git" ]; then
     log_message "Cloning repository for the first time..."
-    git clone git@github.com:$GITHUB_USER/$GITHUB_REPO.git "$REPO_DIR"
+    CLONE_OUTPUT=$(git clone git@github.com:$GITHUB_USER/$GITHUB_REPO.git "$REPO_DIR" 2>&1)
     if [ $? -ne 0 ]; then
-        log_message "ERROR: Failed to clone repository"
+        log_message "ERROR: Failed to clone repository: $CLONE_OUTPUT"
         exit 1
     fi
     log_message "Repository cloned successfully"
@@ -167,8 +172,9 @@ fi
 cd "$REPO_DIR" || exit 1
 
 # Pull latest changes
-if ! git pull origin main; then
-    log_message "ERROR: Git pull failed"
+PULL_OUTPUT=$(git pull origin main 2>&1)
+if [ $? -ne 0 ]; then
+    log_message "ERROR: Git pull failed: $PULL_OUTPUT"
     exit 1
 fi
 
