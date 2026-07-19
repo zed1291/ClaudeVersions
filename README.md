@@ -10,7 +10,7 @@ The information found in this repository is **not associated with, endorsed by, 
 
 **No warranty is provided.** The data may be incomplete, inaccurate, or outdated. The information is provided "as is" without any guarantees of accuracy nor reliability.
 
-This service is scheduled to update daily, but may cease to work at any time without notice.
+This service may cease to work at any time without notice.
 
 ---
 
