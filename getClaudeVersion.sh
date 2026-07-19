@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # --- Config ---
-REPO_DIR="/home/zed/github/ClaudeVersions-repo"
+REPO_DIR="/home/zed-vm/github/ClaudeVersions-repo"
 GITHUB_URL="https://github.com/zed1291/ClaudeVersions.git"
 GITHUB_USER="zed1291"
 GITHUB_REPO="ClaudeVersions"
-SSH_KEY="/home/zed/.claude/github_claude_ed25519"
+SSH_KEY="/home/zed-vm/.claude/github_claude_ed25519"
 
 # Use SSH key from local directory
 export GIT_SSH_COMMAND="ssh -i ${SSH_KEY} -F /dev/null -o StrictHostKeyChecking=no"
@@ -85,11 +85,13 @@ LOCAL_JSON="$SCRIPT_DIR/claude_versions.json"
 if [ ! -f "$LOCAL_JSON" ]; then
     echo '{"latest": {"version": "", "url": "", "date": ""}}' > "$LOCAL_JSON"
     log_message "Initialized local JSON: $LOCAL_JSON"
+    echo "Initialized local JSON: $LOCAL_JSON"
 fi
 
 validate_date "$current_date" "$LOCAL_JSON"
 if [ $? -ne 0 ]; then
     log_message "ERROR: Invalid system date detected. Aborting update."
+    echo "ERROR: Invalid system date detected. Aborting update."
     exit 1
 fi
 
@@ -99,11 +101,13 @@ current_latest_version=$(python3 -c "import json; print(json.load(open('$LOCAL_J
 # Only update if version is different or JSON doesn't exist
 if [ "$current_latest_version" != "$latest_version" ]; then
     log_message "New version detected: $latest_version (was: $current_latest_version)"
+    echo "New version detected: $latest_version (was: $current_latest_version)"
     use_date="$current_date"
 else
     # Keep existing date - version hasn't changed
     use_date=$(python3 -c "import json; print(json.load(open('$LOCAL_JSON'))['latest']['date'])" 2>/dev/null)
     log_message "Version unchanged: $latest_version, preserving date: $use_date"
+    echo "Version unchanged: $latest_version, preserving date: $use_date"
 fi
 
 # --- Function to update JSON ---
@@ -149,9 +153,11 @@ PYEOF
 
 update_json "$LOCAL_JSON" "$latest_version" "$download_url" "$use_date"
 log_message "Updated local JSON with version $latest_version"
+echo "Updated local JSON with version $latest_version"
 
 # --- GitHub Sync ---
 log_message "Starting GitHub sync"
+echo "Starting GitHub sync"
 
 # Work around Git safe.directory when running under cron
 if ! git config --global --get-all safe.directory 2>/dev/null | grep -qxF "$REPO_DIR"; then
@@ -161,12 +167,15 @@ fi
 # Set up the repo directory
 if [ ! -d "$REPO_DIR/.git" ]; then
     log_message "Cloning repository for the first time..."
+    echo "Cloning repository for the first time..."
     CLONE_OUTPUT=$(git clone git@github.com:$GITHUB_USER/$GITHUB_REPO.git "$REPO_DIR" 2>&1)
     if [ $? -ne 0 ]; then
         log_message "ERROR: Failed to clone repository: $CLONE_OUTPUT"
+        echo "ERROR: Failed to clone repository: $CLONE_OUTPUT"
         exit 1
     fi
     log_message "Repository cloned successfully"
+    echo "Repository cloned successfully"
 fi
 
 cd "$REPO_DIR" || exit 1
@@ -175,6 +184,7 @@ cd "$REPO_DIR" || exit 1
 PULL_OUTPUT=$(git pull origin main 2>&1)
 if [ $? -ne 0 ]; then
     log_message "ERROR: Git pull failed: $PULL_OUTPUT"
+    echo "ERROR: Git pull failed: $PULL_OUTPUT"
     exit 1
 fi
 
@@ -187,19 +197,23 @@ cp "$SCRIPT_DIR/getClaudeVersion.sh" ./getClaudeVersion.sh
 # Check if anything changed
 if git diff --quiet claude_versions.json getClaudeVersion.sh; then
     log_message "No changes in JSON or script. Skipping commit."
+    echo "No changes in JSON or script. Skipping commit."
     exit 0
 fi
 
 log_message "Changes detected. Committing to GitHub..."
+echo "Changes detected. Committing to GitHub..."
 
 # Commit and push
 git add claude_versions.json getClaudeVersion.sh
 if ! git commit -m "Automated: Update Claude versions and script ($current_date)"; then
     log_message "ERROR: Git commit failed"
+    echo "ERROR: Git commit failed"
     exit 1
 fi
 git push origin main
 
 log_message "SUCCESS: Pushed to GitHub"
+echo "SUCCESS: Pushed to GitHub"
 log_message "Update complete."
 echo "Update complete."
