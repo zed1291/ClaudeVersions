@@ -1,6 +1,6 @@
 # Claude Versions
 
-This repository contains information about Claude Desktop for Mac version history and and download URL history, automatically updated daily. The initial commit and updates (as of 8 july 2026) are running on my personal computer. In the near future I will have a Synology NAS running this script for more consistent daily checks.
+This repository contains information about Claude Desktop for Mac version history and and download URL history, with automated checks every 30 minutes (run via a Synology VM).
 
 ---
 
