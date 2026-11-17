@@ -1,8 +1,8 @@
 {
   "latest": {
-    "version": "5.11492.5",
-    "url": "https://downloads.claude.ai/releases/darwin/universal/5.11492.5/Claude-1403e2cf44abfb23809c8ae11238d5e9704a41c2.pkg",
-    "date": "2026-11-13"
+    "version": "6.6395.0",
+    "url": "https://downloads.claude.ai/releases/darwin/universal/6.6395.0/Claude-d71a20056be3b25708751e98bef60759ea1f441b.pkg",
+    "date": "2026-11-17"
   },
   "1.19367.0": {
     "url": "https://downloads.claude.ai/releases/darwin/universal/1.19367.0/Claude-1a5be1fbf83d1832486e03a667557c18f0a0ec7a.pkg",
@@ -339,5 +339,9 @@
   "5.11492.5": {
     "url": "https://downloads.claude.ai/releases/darwin/universal/5.11492.5/Claude-1403e2cf44abfb23809c8ae11238d5e9704a41c2.pkg",
     "date": "2026-11-13"
+  },
+  "6.6395.0": {
+    "url": "https://downloads.claude.ai/releases/darwin/universal/6.6395.0/Claude-d71a20056be3b25708751e98bef60759ea1f441b.pkg",
+    "date": "2026-11-17"
   }
 }
